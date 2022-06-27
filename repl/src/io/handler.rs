@@ -1,5 +1,8 @@
 use std::time::Duration;
+use futures::SinkExt;
 use tokio::net::TcpStream;
+use tokio_serde::formats::SymmetricalJson;
+use tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
 use std::net::SocketAddr;
 use super::IoEvent;
 //use log::{error, info};
@@ -7,7 +10,8 @@ use super::IoEvent;
 
 /// In the IO thread, we handle IO event without blocking the REPL thread
 pub struct AsyncHandler {
-    pub stream: Option<TcpStream>
+    pub addr: Option<SocketAddr>,
+    pub stream: Option<TcpStream>,
 }
 
 impl AsyncHandler {
@@ -23,9 +27,33 @@ impl AsyncHandler {
         //    tokio_serde::SymmetricallyFramed::new(length_delimited, SymmetricalJson::default());
 
         let result = match io_event {
-            IoEvent::Connect(addr) => self.do_connect(addr).await,
-            //IoEvent::Sleep(duration) => self.do_sleep(duration).await,
-            _ => unreachable!()
+            IoEvent::Connect(addr) => {
+                self.addr = Some(addr);
+                self.stream = Some(TcpStream::connect(addr).await.unwrap());
+            },
+            IoEvent::ConnectCheck => {
+                match self.stream {
+                    None => println!("Not connected."),
+                    Some(_) => println!("Connected to {:?}.", self.addr),
+                }
+            },
+            IoEvent::Disconnect => {
+                self.stream = None;
+            },
+            IoEvent::Buy(order) => {
+                match &mut self.stream {
+                    None => println!("Not connected, can t place orders."),
+                    Some(str) => {
+                        let length_delimited = FramedWrite::new(str, LengthDelimitedCodec::new());
+                        let mut serialized =
+                            tokio_serde::SymmetricallyFramed::new(length_delimited, SymmetricalJson::default());
+                        serialized
+                            .send(serde_json::to_value(order).unwrap())
+                            .await
+                            .unwrap();
+                    }
+                }
+            },
         };
 
         //if let Err(err) = result {
