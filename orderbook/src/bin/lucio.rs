@@ -1,13 +1,11 @@
 extern crate orderbook;
 use orderbook::orderbook as ob;
-use orderbook::snapshot;
-use orderbook::data::orders;
+use orderbook::commands;
 use futures::prelude::*;
 use tokio::net::TcpListener;
 use serde_json::Value;
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 use tokio_serde::formats::SymmetricalJson;
-
 
 
 #[tokio::main]
@@ -17,6 +15,7 @@ async fn main()
     println!("Listening on {:?}", listener.local_addr());
 
     loop {
+        println!("got new connection!");
         let (socket, _) = listener.accept().await.unwrap();
         let (read, write) = socket.into_split();
 
@@ -29,13 +28,21 @@ async fn main()
             let mut book = ob::OrderBook::new();
             while let Some(msg) = deserialized.try_next().await.unwrap() 
             {
-                let order: orders::Order = serde_json::from_value(msg).unwrap();
-                println!("got order {}", order);
-
-                book.execute(order);
-                
-                let s  = serde_json::to_value(snapshot::Snapshot::new(&book, 4)).unwrap();
-                serialized.send(s).await.unwrap();
+                //let order: orders::Order = serde_json::from_value(msg).unwrap();
+                match serde_json::from_value(msg) {
+                    Ok(cmd) => match cmd {
+                        commands::Cmd::Order(o) => 
+                        { 
+                            book.execute(o); 
+                        },
+                        commands::Cmd::Snapshot(depth) => 
+                        {
+                            let s  = serde_json::to_value(snapshot::Snapshot::new(&book, 4)).unwrap();
+                            serialized.send(s).await.unwrap();
+                        }
+                    },
+                    Err(e) => println!("{}", e)
+                }
             }
         });
     }

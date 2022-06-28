@@ -1,5 +1,6 @@
 extern crate orderbook;
-use orderbook::data::*;
+use orderbook::commands;
+use orderbook::data::{orders, side};
 use easy_repl::{Repl, CommandStatus, command};
 use anyhow::{self, Context};
 //use futures::prelude::*;
@@ -51,7 +52,7 @@ async fn main() -> anyhow::Result<()>
        .add("buy-limit", command! {
            "Place a buy limit order",
            (prod:u32, qty:u64, price:u64) => |prod, qty, pr| {
-               let buy = orders::Order{ prod: prod, qty: qty, price: pr, side: side::Side::Buy, kind: orders::OrderType::LimitOrder };
+               let buy = commands::Cmd::Order(orders::Order{ prod: prod, qty: qty, price: pr, side: side::Side::Buy, kind: orders::OrderType::LimitOrder });
                sbuy.send(IoEvent::Buy(buy)).unwrap();
                Ok(CommandStatus::Done)
            }

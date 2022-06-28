@@ -1,6 +1,5 @@
-use std::time::Duration;
 use std::net::SocketAddr;
-use orderbook::data::*;
+use orderbook::commands;
 
 pub mod handler;
 
@@ -9,5 +8,5 @@ pub enum IoEvent {
     Connect(SocketAddr), 
     ConnectCheck, 
     Disconnect,
-    Buy(orders::Order)
+    Buy(commands::Cmd)
 }
