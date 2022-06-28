@@ -28,8 +28,14 @@ impl AsyncHandler {
 
         let result = match io_event {
             IoEvent::Connect(addr) => {
-                self.addr = Some(addr);
-                self.stream = Some(TcpStream::connect(addr).await.unwrap());
+                match TcpStream::connect(addr).await
+                {
+                    Ok(s) => {
+                        self.addr = Some(addr);
+                        self.stream = Some(s);
+                    },
+                    Err(e) => println!("Could not connect: {}", e) 
+                };
             },
             IoEvent::ConnectCheck => {
                 match self.stream {
