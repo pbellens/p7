@@ -8,5 +8,5 @@ pub enum IoEvent {
     Connect(SocketAddr), 
     ConnectCheck, 
     Disconnect,
-    Buy(commands::Cmd)
+    Req(commands::Cmd)
 }

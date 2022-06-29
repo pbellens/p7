@@ -1,10 +1,13 @@
-use std::time::Duration;
+use futures::TryStreamExt;
 use futures::SinkExt;
+use orderbook::commands;
 use tokio::net::TcpStream;
 use tokio_serde::formats::SymmetricalJson;
-use tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
+use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 use std::net::SocketAddr;
+use serde_json::Value;
 use super::IoEvent;
+
 //use log::{error, info};
 //use crate::app::App;
 
@@ -46,21 +49,54 @@ impl AsyncHandler {
             IoEvent::Disconnect => {
                 self.stream = None;
             },
-            IoEvent::Buy(order) => {
+            IoEvent::Req(cmd) => {
                 match &mut self.stream {
-                    None => println!("Not connected, can t place orders."),
+                    None => println!("Not connected, can t submit."),
                     Some(str) => {
-                        let length_delimited = FramedWrite::new(str, LengthDelimitedCodec::new());
+                        let (read, write) = str.split();
+
+                        let length_delimited_write = FramedWrite::new(write, LengthDelimitedCodec::new());
                         let mut serialized =
-                            tokio_serde::SymmetricallyFramed::new(length_delimited, SymmetricalJson::default());
+                            tokio_serde::SymmetricallyFramed::new(length_delimited_write, SymmetricalJson::<Value>::default());
                         serialized
-                            .send(serde_json::to_value(order).unwrap())
+                            .send(serde_json::to_value(cmd).unwrap())
                             .await
                             .unwrap();
+
+                        if let commands::Cmd::Snapshot(depth) = cmd {
+                            let length_delimited_read = FramedRead::new(read, LengthDelimitedCodec::new());
+                            let mut deserialized = tokio_serde::SymmetricallyFramed::new(length_delimited_read, SymmetricalJson::<Value>::default()); 
+                            if let Some(msg) = deserialized.try_next().await.unwrap() {
+                                println!("got answer {:?}", msg);
+                            } 
+                        }
                     }
                 }
             },
         };
+
+            //let Some(msg) = deserialized.try_next().await.unwrap() 
+            //{
+            //    //let order: orders::Order = serde_json::from_value(msg).unwrap();
+            //    println!("got msg {:?}", msg);
+            //    match serde_json::from_value(msg) {
+            //        Ok(cmd) => match cmd {
+            //            commands::Cmd::Order(o) => 
+            //            { 
+            //                println!("got order {:?}", o);
+            //                book.execute(o); 
+            //            },
+            //            commands::Cmd::Snapshot(depth) => 
+            //            {
+            //                println!("got snapshot request for {}", depth);
+            //                let s  = serde_json::to_value(snapshot::Snapshot::new(&book, depth)).unwrap();
+            //                serialized.send(s).await.unwrap();
+            //            }
+            //        },
+            //        Err(e) => println!("{}", e)
+            //    }
+            //}
+ 
 
         //if let Err(err) = result {
         //    error!("Oops, something wrong happen: {:?}", err);
