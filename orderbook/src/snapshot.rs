@@ -54,3 +54,21 @@ impl Snapshot {
         Snapshot { bids, asks }
     }
 }
+
+impl std::fmt::Display for Snapshot {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let mut d = "".to_owned();
+        for p in self.asks.iter().zip_longest(self.bids.iter().rev()) {
+            d.push_str(&match p {
+                EitherOrBoth::Both(a, b) => format!("ask: {:>8} #{:<8} bid: {:>8} #{:<8}\n", a.price, a.qty, b.price, b.qty),
+                EitherOrBoth::Left(a) => format!("ask: {:>8} #{:<8} bid: {:>8} #{:<8}\n", a.price, a.qty, '-', 0),
+                EitherOrBoth::Right(b) => format!("ask: {:>8} #{:<8} bid: {:>8} #{:<8}\n", '-', 0, b.price, b.qty),
+            });
+        }
+        if d.is_empty() {
+            write!(f, "ask: {:>8} #{:<8} bid: {:>8} #{:<8}", '-', 0, '-', 0)
+        } else {
+            write!(f, "{}", d)
+        }
+    }
+}
