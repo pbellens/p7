@@ -3,8 +3,6 @@ use orderbook::commands;
 use orderbook::data::{orders, side};
 use easy_repl::{Repl, CommandStatus, command};
 use anyhow::{self, Context};
-//use futures::prelude::*;
-//use serde_json::json;
 use crossbeam_channel::unbounded;
 mod io;
 use io::handler::AsyncHandler;
@@ -14,20 +12,23 @@ use crate::io::IoEvent;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> 
 {
-    let (s, r) = unbounded::<IoEvent>();
+    let (reqs, reqr) = unbounded::<IoEvent>();
+    let (rpls, rplr) = unbounded::<IoEvent>();
 
      tokio::spawn(async move {
         let mut handler = AsyncHandler{ addr: None, stream: None };
-        while let Ok(io_event) = r.recv() {
-            handler.handle_io_event(io_event).await;
+        while let Ok(io_event) = reqr.recv() {
+            let repl = handler.handle_io_event(io_event).await;
+            rpls.send(repl);
         }
     });
 
-    let sconnect = s.clone();
-    let scheck = s.clone();
-    let sdisconnect = s.clone();
-    let sbuy = s.clone();
-    let ssnapshot = s.clone();
+    let sconnect = reqs.clone();
+    let scheck = reqs.clone();
+    let sdisconnect = reqs.clone();
+    let sbuy = reqs.clone();
+    let ssnapshot = reqs.clone();
+    let rsnapshot = rplr.clone();
     let mut repl = Repl::builder()
        .add("connect", command! {
            "Connect to P7 instance.",
@@ -50,7 +51,7 @@ async fn main() -> anyhow::Result<()>
                Ok(CommandStatus::Done)
            }
         })
-       .add("buy-limit", command! {
+       .add("limit-buy", command! {
            "Place a buy limit order",
            (prod:u32, qty:u64, price:u64) => |prod, qty, pr| {
                let buy = commands::Cmd::Order(orders::Order{ prod: prod, qty: qty, price: pr, side: side::Side::Buy, kind: orders::OrderType::LimitOrder });
@@ -63,6 +64,8 @@ async fn main() -> anyhow::Result<()>
            (prod: u32, depth:usize) => |_prod, depth| {
                let req = commands::Cmd::Snapshot(depth);
                ssnapshot.send(IoEvent::Req(req)).unwrap();
+               let dum = rsnapshot.recv().unwrap();
+               println!("got repl {:?}", dum);
                Ok(CommandStatus::Done)
            }
        })
@@ -72,3 +75,4 @@ async fn main() -> anyhow::Result<()>
 
     Ok(())
 }
+
