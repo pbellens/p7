@@ -1,7 +1,8 @@
 use crate::matching::market;
 use crate::matching::limit;
-use crate::{data::fill, data::orders, data::trade};
-use itertools::{EitherOrBoth, Itertools};
+use crate::{data::fill, data::orders, data::trade, snapshot};
+use std::fmt::Display;
+//use itertools::{EitherOrBoth, Itertools};
 use std::collections::BTreeMap;
 
 #[derive(Debug)]
@@ -58,36 +59,8 @@ impl OrderBook {
 
 impl std::fmt::Display for OrderBook {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let mut d = "".to_owned();
-        for p in self.asks.iter().zip_longest(self.bids.iter().rev()) {
-            d.push_str(&match p {
-                EitherOrBoth::Both(a, b) => format!(
-                    "ask: {:>8} #{:<8} bid: {:>8} #{:<8}\n",
-                    a.0,
-                    a.1.iter().fold(0, |acc, &o| acc + o.qty),
-                    b.0,
-                    b.1.iter().fold(0, |acc, &o| acc + o.qty)
-                ),
-                EitherOrBoth::Left(a) => format!(
-                    "ask: {:>8} #{:<8} bid: {:>8} #{:<8}\n",
-                    a.0,
-                    a.1.iter().fold(0, |acc, &o| acc + o.qty),
-                    '-',
-                    0
-                ),
-                EitherOrBoth::Right(b) => format!(
-                    "ask: {:>8} #{:<8} bid: {:>8} #{:<8}\n",
-                    '-',
-                    0,
-                    b.0,
-                    b.1.iter().fold(0, |acc, &o| acc + o.qty)
-                ),
-            });
-        }
-        if d.is_empty() {
-            write!(f, "ask: {:>8} #{:<8} bid: {:>8} #{:<8}", '-', 0, '-', 0)
-        } else {
-            write!(f, "{}", d)
-        }
+        let s = snapshot::Snapshot::new(self, 4);
+        std::fmt::Display::fmt(&s, f)
     }
 }
+
