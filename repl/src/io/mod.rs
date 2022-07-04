@@ -3,8 +3,9 @@ use orderbook::commands;
 
 pub mod handler;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum IoEvent {
+    Reply(anyhow::Result<String>),
     Connect(SocketAddr), 
     ConnectCheck, 
     Disconnect,
