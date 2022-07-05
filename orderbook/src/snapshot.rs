@@ -68,6 +68,7 @@ impl std::fmt::Display for Snapshot {
         if d.is_empty() {
             write!(f, "ask: {:>8} #{:<8} bid: {:>8} #{:<8}", '-', 0, '-', 0)
         } else {
+            d.pop();
             write!(f, "{}", d)
         }
     }
