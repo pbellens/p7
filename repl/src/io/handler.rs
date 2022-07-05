@@ -58,6 +58,7 @@ impl AsyncHandler {
                                 let mut deserialized = tokio_serde::SymmetricallyFramed::new(length_delimited_read, SymmetricalJson::<Value>::default()); 
                                 let msg = deserialized.try_next().await?;
                                 let snapshot: Snapshot = serde_json::from_value(msg.unwrap())?;
+                                println!("{:?}", snapshot);
                                 let s = format!("{}", snapshot);
                                 Ok(IoReply::Reply(s))
                             },

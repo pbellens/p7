@@ -1,8 +1,6 @@
 use crate::matching::market;
 use crate::matching::limit;
 use crate::{data::fill, data::orders, data::trade, snapshot};
-use std::fmt::Display;
-//use itertools::{EitherOrBoth, Itertools};
 use std::collections::BTreeMap;
 
 #[derive(Debug)]
@@ -42,7 +40,7 @@ impl OrderBook {
             orders::Order {
                 prod: p,
                 qty: q,
-                price: pr,
+                price: _,
                 side: s,
                 kind: orders::OrderType::MarketOrder,
             } => market::market(self, p, s, q),

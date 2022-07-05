@@ -64,7 +64,6 @@ pub struct RandomIterator {
 
 impl RandomIterator {
     pub fn new(ordertype: OrderType) -> Self {
-        let die = Uniform::from(1..7);
         RandomIterator {
             ordertype,
             rng: rand::thread_rng()

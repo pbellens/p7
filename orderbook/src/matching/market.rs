@@ -1,4 +1,4 @@
-use crate::data::{fill::Fill, orders::Order, orders::OrderType, side::Side};
+use crate::data::side::Side;
 use crate::orderbook as ob;
 use crate::matching::core;
 
@@ -16,6 +16,6 @@ pub fn market(ob: &mut ob::OrderBook, id: u32, side: Side, qty: u64) -> ob::Trad
         }
     }
 
-    ob::Trade { fills: fills, qty: qty - remaining_qty }
+    ob::Trade { fills, qty: qty - remaining_qty }
 }
 
