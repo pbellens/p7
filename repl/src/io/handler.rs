@@ -5,8 +5,9 @@ use tokio::net::TcpStream;
 use tokio_serde::formats::SymmetricalJson;
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 use std::net::SocketAddr;
+use anyhow::{Result, Ok};
 use serde_json::Value;
-use super::IoEvent;
+use super::{IoEvent, IoReply};
 use orderbook::snapshot::Snapshot;
 
 //use log::{error, info};
@@ -19,34 +20,28 @@ pub struct AsyncHandler {
 }
 
 impl AsyncHandler {
-    pub fn new(saddr: SocketAddr) {
-    }
-
     /// We could be async here
-    pub async fn handle_io_event(&mut self, io_event: IoEvent) {
-        let result = match io_event {
+    pub async fn handle_io_event(&mut self, io_event: IoEvent) -> Result<IoReply> {
+        match io_event {
             IoEvent::Connect(addr) => {
-                match TcpStream::connect(addr).await
-                {
-                    Ok(s) => {
-                        self.addr = Some(addr);
-                        self.stream = Some(s);
-                    },
-                    Err(e) => println!("Could not connect: {}", e) 
-                };
+                let stream =  TcpStream::connect(addr).await?;
+                self.addr = Some(addr);
+                self.stream = Some(stream);
+                Ok(IoReply::Stum)
             },
             IoEvent::ConnectCheck => {
                 match self.stream {
-                    None => println!("Not connected."),
-                    Some(_) => println!("Connected to {:?}.", self.addr),
+                    None => Ok(IoReply::Reply("Not connected.".to_string())),
+                    Some(_) => Ok(IoReply::Reply(format!("Connected to {:?}.", self.addr)))
                 }
             },
             IoEvent::Disconnect => {
                 self.stream = None;
+                Ok(IoReply::Stum)
             },
             IoEvent::Req(cmd) => {
                 match &mut self.stream {
-                    None => println!("Not connected, can t submit."),
+                    None => Ok(IoReply::Reply("Not connected, can t submit.".to_string())),
                     Some(str) => {
                         let (read, write) = str.split();
 
@@ -55,23 +50,23 @@ impl AsyncHandler {
                             tokio_serde::SymmetricallyFramed::new(length_delimited_write, SymmetricalJson::<Value>::default());
                         serialized
                             .send(serde_json::to_value(cmd).unwrap())
-                            .await
-                            .unwrap();
+                            .await?;
 
-                        if let commands::Cmd::Snapshot(depth) = cmd {
-                            let length_delimited_read = FramedRead::new(read, LengthDelimitedCodec::new());
-                            let mut deserialized = tokio_serde::SymmetricallyFramed::new(length_delimited_read, SymmetricalJson::<Value>::default()); 
-                            if let Some(msg) = deserialized.try_next().await.unwrap() {
-                                let snapshot: Snapshot = serde_json::from_value(msg).unwrap();
+                        match cmd {
+                            commands::Cmd::Snapshot(_depth)  => {
+                                let length_delimited_read = FramedRead::new(read, LengthDelimitedCodec::new());
+                                let mut deserialized = tokio_serde::SymmetricallyFramed::new(length_delimited_read, SymmetricalJson::<Value>::default()); 
+                                let msg = deserialized.try_next().await?;
+                                let snapshot: Snapshot = serde_json::from_value(msg.unwrap())?;
                                 let s = format!("{}", snapshot);
-                                Ok(s)
-                            } 
+                                Ok(IoReply::Reply(s))
+                            },
+                            commands::Cmd::Order(_) => Ok(IoReply::Stum)
                         }
                     }
                 }
             },
-            IoEvent::Reply(_) => todo!(),
-        };
+        }
 
         //if let Err(err) = result {
         //    error!("Oops, something wrong happen: {:?}", err);
@@ -80,10 +75,4 @@ impl AsyncHandler {
         //let mut app = self.app.lock().await;
         //app.loaded();
     }
-
-    ///// We use dummy implementation here, just wait 1s
-    async fn do_connect(&mut self, addr: SocketAddr) {
-        self.stream = Some(TcpStream::connect(addr).await.unwrap());
-    }
 }
-
