@@ -5,19 +5,18 @@ use crate::matching::core;
 
 pub fn limit(ob: &mut ob::OrderBook, id: u32, side: Side, qty: u64, price: u64) -> ob::Trade 
 {
-    let remaining_qty;
     let mut fills: Vec<Fill> = Vec::new();
 
     match side {
         Side::Buy => {
-            remaining_qty = core::gmatch(ob.asks.iter_mut(), |lp, p| { lp < p }, id, qty, &mut fills, Some(price));
-            if remaining_qty > 0 {
+            let mi = core::gmatch(ob.asks.iter_mut(), |lp, p| { lp < p }, id, qty, &mut fills, Some(price));
+            if mi.remain > 0 {
                 let queue_capacity = 128; //self.default_queue_capacity;
                 ob.bids
                     .entry(price)
                     .or_insert_with(|| Vec::with_capacity(queue_capacity))
                     .push(Order {
-                        qty: remaining_qty,
+                        qty: mi.remain,
                         price,
                         prod: 0,
                         side: Side::Buy,
@@ -29,16 +28,20 @@ pub fn limit(ob: &mut ob::OrderBook, id: u32, side: Side, qty: u64, price: u64) 
                     _ => ob.max_bid,
                 };
             }
-        }
+            if let Some(_) = mi.pivot {
+                ob.asks.retain(|&_k, v| { ! v.is_empty() });
+            } 
+            ob::Trade { fills, qty: qty - mi.remain }
+        },
         Side::Sell => {
-            remaining_qty = core::gmatch(ob.bids.iter_mut(), |lp, p| { lp > p }, id, qty, &mut fills, Some(price));
-            if remaining_qty > 0 {
+            let mi = core::gmatch(ob.bids.iter_mut(), |lp, p| { lp > p }, id, qty, &mut fills, Some(price));
+            if mi.remain > 0 {
                 let queue_capacity = 128; //ob.default_queue_capacity;
                 ob.asks
                     .entry(price)
                     .or_insert_with(|| Vec::with_capacity(queue_capacity))
                     .push(Order {
-                        qty: remaining_qty,
+                        qty: mi.remain,
                         price,
                         prod: 0,
                         side: Side::Sell,
@@ -50,8 +53,10 @@ pub fn limit(ob: &mut ob::OrderBook, id: u32, side: Side, qty: u64, price: u64) 
                     _ => ob.min_ask,
                 };
             }
+            if let Some(_) = mi.pivot {
+                ob.bids.retain(|&_k, v| { ! v.is_empty() });
+            } 
+            ob::Trade { fills, qty: qty - mi.remain }
         }
     }
-
-    ob::Trade { fills: fills, qty: qty - remaining_qty }
 }
