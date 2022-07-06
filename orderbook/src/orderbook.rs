@@ -2,6 +2,7 @@ use crate::matching::market;
 use crate::matching::limit;
 use crate::{data::fill, data::orders, data::trade, snapshot};
 use std::collections::BTreeMap;
+use serde::{Serialize, Deserialize};
 
 #[derive(Debug)]
 pub struct OrderBook {
@@ -12,7 +13,7 @@ pub struct OrderBook {
     pub bids: BTreeMap<u64, Vec<orders::Order>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Trade {
     pub fills: Vec<fill::Fill>,
     pub qty: u64

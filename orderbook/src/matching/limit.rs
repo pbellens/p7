@@ -34,7 +34,7 @@ pub fn limit(ob: &mut ob::OrderBook, id: u32, side: Side, qty: u64, price: u64) 
             ob::Trade { fills, qty: qty - mi.remain }
         },
         Side::Sell => {
-            let mi = core::gmatch(ob.bids.iter_mut(), |lp, p| { lp > p }, id, qty, &mut fills, Some(price));
+            let mi = core::gmatch(ob.bids.iter_mut().rev(), |lp, p| { lp > p }, id, qty, &mut fills, Some(price));
             if mi.remain > 0 {
                 let queue_capacity = 128; //ob.default_queue_capacity;
                 ob.asks

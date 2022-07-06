@@ -91,10 +91,7 @@ async fn main() -> anyhow::Result<()>
             (prod: u32, depth:usize) => |_prod, depth| {
                 let req = commands::Cmd::Snapshot(depth);
                 ssnapshot.send(IoEvent::Req(req)).unwrap();
-                match rsnapshot.recv().unwrap() {
-                    IoReply::Reply(rpl) => println!("{}",rpl),
-                    IoReply::Stum => (), 
-                }
+                handle(&rsnapshot.recv().unwrap());
                 Ok(CommandStatus::Done)
            }
        })

@@ -32,19 +32,21 @@ async fn main()
          tokio::spawn(async move {
             while let Some(msg) = deserialized.try_next().await.unwrap() 
             {
-                //let order: orders::Order = serde_json::from_value(msg).unwrap();
                 println!("got msg {:?}", msg);
                 match serde_json::from_value(msg) {
                     Ok(cmd) => match cmd {
                         commands::Cmd::Order(o) => 
                         { 
-                            let mut ob = book.lock().unwrap();
-                            println!("got order {:?}", o);
-                            ob.execute(o); 
+                            let json = 
+                            {
+                                let mut ob = book.lock().unwrap();
+                                let trade = ob.execute(o); 
+                                serde_json::to_value(trade).unwrap()
+                            };
+                            serialized.send(json).await.unwrap();
                         },
                         commands::Cmd::Snapshot(depth) => 
                         {
-                            println!("got snapshot request for {}", depth);
                             let json = 
                             {
                                 let ob = book.lock().unwrap();

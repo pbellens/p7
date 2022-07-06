@@ -1,6 +1,7 @@
 use futures::TryStreamExt;
 use futures::SinkExt;
 use orderbook::commands;
+use orderbook::orderbook::Trade;
 use tokio::net::TcpStream;
 use tokio_serde::formats::SymmetricalJson;
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
@@ -58,11 +59,17 @@ impl AsyncHandler {
                                 let mut deserialized = tokio_serde::SymmetricallyFramed::new(length_delimited_read, SymmetricalJson::<Value>::default()); 
                                 let msg = deserialized.try_next().await?;
                                 let snapshot: Snapshot = serde_json::from_value(msg.unwrap())?;
-                                println!("{:?}", snapshot);
                                 let s = format!("{}", snapshot);
                                 Ok(IoReply::Reply(s))
                             },
-                            commands::Cmd::Order(_) => Ok(IoReply::Stum)
+                            commands::Cmd::Order(_order) => {
+                                let length_delimited_read = FramedRead::new(read, LengthDelimitedCodec::new());
+                                let mut deserialized = tokio_serde::SymmetricallyFramed::new(length_delimited_read, SymmetricalJson::<Value>::default()); 
+                                let msg = deserialized.try_next().await?;
+                                let trade: Trade = serde_json::from_value(msg.unwrap())?;
+                                let s = format!("{:?}", trade);
+                                Ok(IoReply::Reply(s))
+                            }
                         }
                     }
                 }

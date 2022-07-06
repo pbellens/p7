@@ -37,7 +37,6 @@ where L: Fn(u64, u64) -> bool,
         }
         let filled_qty = process_queue(queue, remaining_qty, id, Side::Buy, fills);
         if queue.is_empty() {
-            println!("queue is empty at {}", *ask_price);
             pivot = Some(*ask_price);
             //update_bid_ask = true;
 
@@ -46,7 +45,6 @@ where L: Fn(u64, u64) -> bool,
     }
 
     //self.update_min_ask();
-    println!("pivot at end {:?}", pivot);
     MatchInfo { remain: remaining_qty, pivot } 
 }
 
