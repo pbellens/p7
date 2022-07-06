@@ -3,9 +3,9 @@ use crate::data::side;
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Fill {
     /// The ID of the order that triggered the fill (taker).
-    pub order_1: u128,
+    pub order_1: u64,
     /// The ID of the matching order.
-    pub order_2: u128,
+    pub order_2: u64,
     /// The quantity that was traded.
     pub qty: u64,
     /// The price at which the trade happened.

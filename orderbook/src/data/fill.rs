@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Fill {
     /// The ID of the order that triggered the fill.
-    pub taker: u128,
+    pub taker: u64,
     /// The ID of the matching order.
-    pub other: u128,
+    pub other: u64,
     /// The quantity that was traded.
     pub qty: u64,
     /// The price at which the trade happened.
