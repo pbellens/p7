@@ -5,23 +5,6 @@ use serde_json::Deserializer;
 use std::fs::File;
 use std::io::{BufReader, Error};
 
-
-//test(b.asks.iter_mut().rev());
-fn test<'a, I: Iterator<Item=(&'a u64,&'a mut Vec<orders::Order>)>>(mut it: I) -> i32 
-{
-    for (p, q) in it {
-        println!("p {}", p)
-
-    }
-//    it.fold(0, |acc, x| acc + x);
-//      let x = it.next().unwrap();
-//      println!("{:?}", x);
-//    let y = it.next().unwrap();
-//    let t = x + y;
-//
-    return 0
-}
-
 fn main() -> Result<(), Error> {
     let mut book = ob::OrderBook::new();
 
