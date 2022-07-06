@@ -1,15 +1,23 @@
 use crate::data::{fill::Fill, orders::Order, side::Side};
 
-pub fn gmatch<'a, I: Iterator<Item=(&'a u64,&'a mut Vec<Order>)>, L>(
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct MatchInfo {
+    pub remain: u64,
+    pub pivot: Option<u64>,
+}
+
+pub fn gmatch<'a, I, L>(
     it: I,
     liml: L,
     id: u32,
     qty: u64,
     fills: &mut Vec<Fill>,
-    limit_price: Option<u64>) -> u64 
-where L: Fn(u64, u64) -> bool
+    limit_price: Option<u64>) -> MatchInfo
+where L: Fn(u64, u64) -> bool,
+    I: Iterator<Item=(&'a u64,&'a mut Vec<Order>)>
 {
     let mut remaining_qty = qty;
+    let mut pivot: Option<u64> = None;
     //let mut update_bid_ask = false;
     for (ask_price, queue) in it {
         if queue.is_empty() {
@@ -28,14 +36,18 @@ where L: Fn(u64, u64) -> bool
             break;
         }
         let filled_qty = process_queue(queue, remaining_qty, id, Side::Buy, fills);
-        //if queue.is_empty() {
-        //    update_bid_ask = true;
-        //}
+        if queue.is_empty() {
+            println!("queue is empty at {}", *ask_price);
+            pivot = Some(*ask_price);
+            //update_bid_ask = true;
+
+        }
         remaining_qty -= filled_qty;
     }
 
     //self.update_min_ask();
-    remaining_qty
+    println!("pivot at end {:?}", pivot);
+    MatchInfo { remain: remaining_qty, pivot } 
 }
 
 pub fn process_queue(
