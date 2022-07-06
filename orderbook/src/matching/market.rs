@@ -4,18 +4,22 @@ use crate::matching::core;
 
 
 pub fn market(ob: &mut ob::OrderBook, id: u32, side: Side, qty: u64) -> ob::Trade {
-    let remaining_qty;
     let mut fills = Vec::new();
-
     match side {
         Side::Buy => {
-            remaining_qty = core::gmatch(ob.asks.iter_mut(), |lp, p| { lp < p }, id, qty, &mut fills, None);
-        }
+            let mi = core::gmatch(ob.asks.iter_mut(), |lp, p| { lp < p }, id, qty, &mut fills, None);
+            if let Some(_) = mi.pivot {
+                ob.asks.retain(|&_k, v| { ! v.is_empty() });
+            } 
+            ob::Trade { fills, qty: qty - mi.remain }
+        },
         Side::Sell => {
-            remaining_qty = core::gmatch(ob.bids.iter_mut().rev(), |lp, p| { lp > p }, id, qty, &mut fills, None);
+            let mi = core::gmatch(ob.bids.iter_mut().rev(), |lp, p| { lp > p }, id, qty, &mut fills, None);
+            if let Some(_) = mi.pivot {
+                ob.bids.retain(|&_k, v| { ! v.is_empty() });
+            } 
+            ob::Trade { fills, qty: qty - mi.remain }
         }
     }
-
-    ob::Trade { fills, qty: qty - remaining_qty }
 }
 
