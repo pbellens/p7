@@ -1,4 +1,4 @@
-use crate::data::{fill::Fill, orders::Order, side::Side};
+use crate::data::{fill::Fill, orders::BookOrder, side::Side};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct MatchInfo {
@@ -14,7 +14,7 @@ pub fn gmatch<'a, I, L>(
     fills: &mut Vec<Fill>,
     limit_price: Option<u64>) -> MatchInfo
 where L: Fn(u64, u64) -> bool,
-    I: Iterator<Item=(&'a u64,&'a mut Vec<Order>)>
+    I: Iterator<Item=(&'a u64,&'a mut Vec<BookOrder>)>
 {
     let mut remaining_qty = qty;
     let mut pivot: Option<u64> = None;
@@ -49,7 +49,7 @@ where L: Fn(u64, u64) -> bool,
 }
 
 pub fn process_queue(
-    opposite_orders: &mut Vec<Order>,
+    opposite_orders: &mut Vec<BookOrder>,
     remaining_qty: u64,
     id: u32,
     side: Side,
@@ -84,11 +84,12 @@ pub fn process_queue(
         head_order.qty -= traded_quantity;
         fills.push(Fill {
             taker: id.into(),
-            other: 0,
+            other: head_order.id,
             qty: traded_quantity,
             price: 0,
             taker_side: side,
             total_fill: filled,
+
         });
         filled_qty += traded_quantity;
     }
