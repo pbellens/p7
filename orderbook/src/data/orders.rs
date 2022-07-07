@@ -17,6 +17,13 @@ pub struct Order {
     pub kind: OrderType,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct BookOrder {
+    pub id: u64,
+    pub qty: u64,
+    pub kind: OrderType,
+}
+
 impl std::fmt::Display for Order {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self.kind {
@@ -96,4 +103,3 @@ impl Iterator for RandomIterator {
         Some(order)
     }
 }
-
