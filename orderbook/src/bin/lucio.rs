@@ -13,7 +13,7 @@ use tokio_serde::formats::SymmetricalJson;
 #[tokio::main]
 async fn main() 
 {
-    let listener = TcpListener::bind("127.0.0.1:17653").await.unwrap();
+    let listener = TcpListener::bind("0.0.0.0:17653").await.unwrap();
     println!("🚀 listening on {:?}", listener.local_addr());
     let motherbook = Arc::new(Mutex::new(ob::OrderBook::new()));
 
@@ -61,5 +61,3 @@ async fn main()
         });
     }
 }
-
-
