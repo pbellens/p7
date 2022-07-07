@@ -2,6 +2,7 @@ use crate::matching::market;
 use crate::matching::limit;
 use crate::{data::fill, data::orders, data::trade, snapshot};
 use std::collections::BTreeMap;
+use std::fmt::Display;
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug)]
@@ -9,19 +10,35 @@ pub struct OrderBook {
     pub last_trade: Option<trade::Trade>,
     pub min_ask: Option<u64>,
     pub max_bid: Option<u64>,
-    pub asks: BTreeMap<u64, Vec<orders::Order>>,
-    pub bids: BTreeMap<u64, Vec<orders::Order>>,
+    pub orderid: u64,
+    pub asks: BTreeMap<u64, Vec<orders::BookOrder>>,
+    pub bids: BTreeMap<u64, Vec<orders::BookOrder>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Trade {
+    pub id: Option<u64>,
     pub fills: Vec<fill::Fill>,
-    pub qty: u64
+    pub qty: u64,
+    pub remain: u64
 }
 
 impl Trade {
     pub fn new() -> Self {
-        Trade { fills: vec![], qty: 0 }
+        Trade { id: None, fills: vec![], qty: 0, remain: 0 }
+    }
+}
+
+impl Display for Trade {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut d = "".to_owned();
+        if let Some(id) = self.id {
+            d.push_str(&format!("\u{1F4D2} order ID: {} #{}\n", id, self.remain));
+        } else {
+            d.push_str(&format!("\u{1F340} qty: {}\n", self.qty));
+        }
+        d.pop();
+        write!(f, "{}", d)
     }
 }
 
@@ -31,6 +48,7 @@ impl OrderBook {
             last_trade: None,
             min_ask: None,
             max_bid: None,
+            orderid: 0,
             asks: BTreeMap::new(),
             bids: BTreeMap::new(),
         }
@@ -62,4 +80,3 @@ impl std::fmt::Display for OrderBook {
         std::fmt::Display::fmt(&s, f)
     }
 }
-
