@@ -28,12 +28,12 @@ impl AsyncHandler {
                 let stream =  TcpStream::connect(addr).await?;
                 self.addr = Some(addr);
                 self.stream = Some(stream);
-                Ok(IoReply::Stum)
+                Ok(IoReply::Reply(format!("\u{1F680}Connected to {:?}.", self.addr)))
             },
             IoEvent::ConnectCheck => {
                 match self.stream {
-                    None => Ok(IoReply::Reply("Not connected.".to_string())),
-                    Some(_) => Ok(IoReply::Reply(format!("Connected to {:?}.", self.addr)))
+                    None => Ok(IoReply::Reply("\u{1F4A4}Not connected.".to_string())),
+                    Some(_) => Ok(IoReply::Reply(format!("\u{1F680}Connected to {:?}.", self.addr))),
                 }
             },
             IoEvent::Disconnect => {
